@@ -1,0 +1,37 @@
+# Inherit a broad set of checks
+Checks: 'google-*,bugprone-*,cert-*,cppcoreguidelines-*,misc-*,modernize-*,readability-*,performance-*,portability-*'
+
+# Configure naming convention checks
+CheckOptions:
+  # General Casing Rules
+  - { key: readability-identifier-naming.ClassCase,            value: CamelCase }
+  - { key: readability-identifier-naming.StructCase,           value: CamelCase }
+  - { key: readability-identifier-naming.EnumCase,             value: CamelCase }
+  - { key: readability-identifier-naming.UnionCase,            value: CamelCase }
+  - { key: readability-identifier-naming.FunctionCase,         value: CamelCase }
+  - { key: readability-identifier-naming.MethodCase,           value: CamelCase }
+  - { key: readability-identifier-naming.ConstantCase,         value: snake_case }
+  - { key: readability-identifier-naming.GlobalConstantCase,   value: UPPER_CASE }
+  - { key: readability-identifier-naming.NamespaceCase,        value: CamelCase }
+  - { key: readability-identifier-naming.TypedefCase,          value: CamelCase }
+  - { key: readability-identifier-naming.MacroCase,            value: UPPER_CASE }
+  - { key: readability-identifier-naming.EnumConstantCase,     value: snake_case }
+
+  # Specific Prefixes/Suffixes
+  - { key: readability-identifier-naming.VariableCase,         value: snake_case }
+  - { key: readability-naming-identifier.GlobalVariableCase,   value: snake_case }
+
+  # Parameters and Local Variables
+  - { key: readability-identifier-naming.ParameterCase,        value: snake_case }
+  - { key: readability-identifier-naming.ParameterPrefix,      value: '_' }
+  - { key: readability-identifier-naming.LocalVariableCase,    value: snake_case }
+
+  # Class and Struct Members
+  - { key: readability-identifier-naming.PublicMemberCase,     value: snake_case }
+  - { key: readability-identifier-naming.PrivateMemberCase,    value: snake_case }
+  - { key: readability-identifier-naming.PrivateMemberPrefix,  value: '_m_' }
+  - { key: readability-identifier-naming.UnionMemberCase,      value: snake_case }
+
+  # Templates
+  - { key: readability-identifier-naming.TemplateParameterCase, value: snake_case }
+  - { key: readability-identifier-naming.TemplateParameterPrefix, value: '_' }

@@ -1,0 +1,12 @@
+Language: Cpp
+BasedOnStyle: Google
+UseTab: Never
+ColumnLimit: 80
+AllowShortBlocksOnASingleLine: Never
+AllowShortFunctionsOnASingleLine: Empty
+AlignAfterOpenBracket: true
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackArguments: false
+BinPackParameters: OnePerLine
+AlignConsecutiveAssignments: Consecutive
+SortIncludes: Never
