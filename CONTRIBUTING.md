@@ -24,8 +24,6 @@ We use strict naming conventions. Please make sure all symbol names follow the r
 - **Private Member Variables:** `m_snake_case` (snake_case prefixed with `m_`)
 - **Public Member Variables:** `snake_case`
 
-These conventions are enforced via the provided [`.clang-tidy`](.clang-tidy) file among other checks. Make sure your code does not violate any rules mentioned.
-
 ## 3. Code Quality
 
 All code must compile without warnings under Clang-Tidy and Clang/GCC with `-Wall -Wextra -Wpedantic`. Warnings will be treated as errors.

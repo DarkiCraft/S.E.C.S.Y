@@ -1,5 +1,5 @@
 #include "Test.hpp"
 
 int main() {
-  Foo();
+  Test::Foo();
 }
