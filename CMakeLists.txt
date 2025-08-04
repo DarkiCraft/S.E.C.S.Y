@@ -8,6 +8,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 include(FetchContent)
 
+set(FETCHCONTENT_QUIET OFF)
+set(BUILD_SHARED_LIBS OFF)
+set(OPTION_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(OPTION_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(OPTION_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
+
 FetchContent_Declare(
     raylib
     GIT_REPOSITORY https://github.com/raysan5/raylib.git
@@ -23,12 +29,6 @@ FetchContent_Declare(
     GIT_SHALLOW    TRUE
 )
 FetchContent_MakeAvailable(raylib_cpp)
-
-set(FETCHCONTENT_QUIET OFF)
-set(BUILD_SHARED_LIBS OFF)
-set(OPTION_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-set(OPTION_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(OPTION_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
 
 add_library(${PROJECT_NAME}
     src/Test.cpp
