@@ -30,11 +30,9 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(raylib_cpp)
 
-add_library(${PROJECT_NAME}
-    src/Test.cpp
-)
+add_executable(${PROJECT_NAME} main.cpp)
 
-target_include_directories(${PROJECT_NAME} PUBLIC include)
+target_include_directories(${PROJECT_NAME} PUBLIC src)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
     raylib
@@ -61,10 +59,3 @@ elseif(WIN32)
         gdi32
     )
 endif()
-
-
-add_executable(main
-    src/main.cpp
-)
-
-target_link_libraries(main PRIVATE ${PROJECT_NAME})
