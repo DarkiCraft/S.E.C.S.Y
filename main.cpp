@@ -20,6 +20,7 @@ struct Name {
 
 int main() {
   SECSY::Registry reg;
+  SECSY::Render render(800, 600, "SECSY Example");
 
   SECSY::Entity e1 = reg.CreateEntity();
   SECSY::Entity e2 = reg.CreateEntity();
@@ -38,6 +39,23 @@ int main() {
     std::cout << "Entity " << e.id << " Position: " << pos.x << ", " << pos.y
               << "\n";
   });
+
+  while (!WindowShouldClose()) {
+    BeginDrawing();
+    ClearBackground(RAYWHITE);
+
+    if (render.isFullscreen()) {
+      DrawText("Fullscreen Mode", 10, 10, 20, DARKGRAY);
+    } else {
+      DrawText("Windowed Mode", 10, 10, 20, DARKGRAY);
+    }
+
+    EndDrawing();
+
+    if (IsKeyPressed(KEY_F11)) {
+      render.ToggleFullscreenMode();
+    }
+  }
 
   reg.Each<Name>([](SECSY::Entity e, Name& n) {
     std::cout << "Entity[" << e.id << "]: " << n.value << "\n";
