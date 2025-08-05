@@ -18,6 +18,13 @@ struct Name {
   }
 };
 
+/**
+ * @brief Demonstrates basic entity-component-system (ECS) usage with rendering and input handling.
+ *
+ * Creates entities with position, velocity, and name components, updates positions, and renders a window that can toggle between fullscreen and windowed modes. Outputs entity information to the console and manages entity lifecycles.
+ *
+ * @return int Exit status code.
+ */
 int main() {
   SECSY::Registry reg;
   SECSY::Render render(800, 600, "SECSY Example");
