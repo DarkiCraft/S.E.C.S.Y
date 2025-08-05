@@ -4,6 +4,7 @@
 #include <string>
 #include "cmath"
 #include "raylib.h"
+#include "SECSY/ECS/Render/Sprite.hpp"
 
 namespace SECSY {
 enum class ScalingMode {
@@ -14,17 +15,33 @@ class Render {
   // class responsible for creating a screen
  public:
   Render(unsigned int width, unsigned int height, std::string title)
-      : width(width), height(height), title(std::move(title)) {
+      : width(width),
+        height(height),
+        title(std::move(title)),
+        scalingMode(ScalingMode::LETTERBOX),
+        renderScale(1.0f),
+        renderOffset{0.0f, 0.0f} {
     InitWindow(this->width, this->height, this->title.c_str());
     SetWindowState(FLAG_WINDOW_RESIZABLE);
+
+    renderTexture = LoadRenderTexture(width, height);
     SetTargetFPS(60);
   }
   ~Render() {
+    UnloadRenderTexture(renderTexture);
     CloseWindow();
   }
 
   void ToggleFullscreenMode() {
     ToggleFullscreen();
+  }
+
+  void SetWindowSize(int width, int height) {
+    if (!IsWindowFullscreen()) {
+      this->width  = width;
+      this->height = height;
+      UpdateScaling();
+    }
   }
 
   bool isFullscreen() const {
@@ -37,10 +54,52 @@ class Render {
   }
 
   void BeginRendering() {
-    if (!WindowShouldClose() && (GetScreenWidth() != currentWindowWidth ||
-                                 GetScreenHeight() != currentWindowHeight)) {
+    if (GetScreenWidth() != currentWindowWidth ||
+        GetScreenHeight() != currentWindowHeight) {
       UpdateScaling();
     }
+
+    BeginTextureMode(renderTexture);
+    ClearBackground(RAYWHITE);
+  }
+
+  // Textures + Sprites
+  void DrawSprite(const Sprite& sprite) {
+    Rectangle destRect = {sprite.position.x + renderOffset.x,
+                          sprite.position.y + renderOffset.y,
+                          sprite.sourceRect.width * renderScale,
+                          sprite.sourceRect.height * renderScale};
+
+    DrawTexturePro(sprite.texture,
+                   sprite.sourceRect,
+                   destRect,
+                   sprite.origin,
+                   sprite.rotation,
+                   sprite.color);
+  }
+
+  void DrawRectangle(float x, float y, float width, float height, Color color) {
+    DrawRectangle(x * renderScale + renderOffset.x,
+                  y * renderScale + renderOffset.y,
+                  width * renderScale,
+                  height * renderScale,
+                  color);
+  }
+
+  void DrawText(
+      const std::string& text, float x, float y, int fontSize, Color color) {
+    DrawText(text.c_str(),
+             x * renderScale + renderOffset.x,
+             y * renderScale + renderOffset.y,
+             fontSize * renderScale,
+             color);
+  }
+
+  void DrawCircle(float x, float y, float radius, Color color) {
+    DrawCircle(x * renderScale + renderOffset.x,
+               y * renderScale + renderOffset.y,
+               radius * renderScale,
+               color);
   }
 
  private:
