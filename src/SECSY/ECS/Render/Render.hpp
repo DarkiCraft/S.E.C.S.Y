@@ -70,7 +70,7 @@ class Render {
                           sprite.sourceRect.width * renderScale,
                           sprite.sourceRect.height * renderScale};
 
-    DrawTexturePro(sprite.texture,
+    DrawTexturePro(*sprite.texture,
                    sprite.sourceRect,
                    destRect,
                    sprite.origin,
