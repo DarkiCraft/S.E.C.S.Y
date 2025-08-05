@@ -4,7 +4,7 @@
 #include <string>
 #include "cmath"
 #include "raylib.h"
-#include "SECSY/ECS/Render/Sprite.hpp"
+#include "Sprite.hpp"
 
 namespace SECSY {
 enum class ScalingMode {
@@ -70,7 +70,7 @@ class Render {
                           sprite.sourceRect.width * renderScale,
                           sprite.sourceRect.height * renderScale};
 
-    DrawTexturePro(sprite.texture,
+    DrawTexturePro(*(sprite.texture),
                    sprite.sourceRect,
                    destRect,
                    sprite.origin,
