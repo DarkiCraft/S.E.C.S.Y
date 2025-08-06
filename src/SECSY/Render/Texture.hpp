@@ -18,7 +18,6 @@ class TextureManager {
       return it->second;
     }
 
-    // Create texture and wrap it in a shared_ptr with a custom deleter
     Texture2D texture = ::LoadTexture(filePath.c_str());
     auto texturePtr =
         std::shared_ptr<Texture2D>(new Texture2D(texture), [](Texture2D* t) {

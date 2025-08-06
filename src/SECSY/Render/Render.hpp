@@ -103,27 +103,27 @@ class Render {
   }
 
   void DrawRectangle(float x, float y, float width, float height, Color color) {
-    DrawRectangle(x * renderScale + renderOffset.x,
-                  y * renderScale + renderOffset.y,
-                  width * renderScale,
-                  height * renderScale,
-                  color);
+    ::DrawRectangle(x * renderScale + renderOffset.x,
+                    y * renderScale + renderOffset.y,
+                    width * renderScale,
+                    height * renderScale,
+                    color);
   }
 
   void DrawText(
       const std::string& text, float x, float y, int fontSize, Color color) {
-    DrawText(text.c_str(),
-             x * renderScale + renderOffset.x,
-             y * renderScale + renderOffset.y,
-             fontSize * renderScale,
-             color);
+    ::DrawText(text.c_str(),
+               x * renderScale + renderOffset.x,
+               y * renderScale + renderOffset.y,
+               fontSize * renderScale,
+               color);
   }
 
   void DrawCircle(float x, float y, float radius, Color color) {
-    DrawCircle(x * renderScale + renderOffset.x,
-               y * renderScale + renderOffset.y,
-               radius * renderScale,
-               color);
+    ::DrawCircle(x * renderScale + renderOffset.x,
+                 y * renderScale + renderOffset.y,
+                 radius * renderScale,
+                 color);
   }
 
  private:

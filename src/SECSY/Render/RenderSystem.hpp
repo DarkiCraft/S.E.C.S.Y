@@ -29,7 +29,7 @@ class RenderSystem {
         });
 
     for (auto& [e, sprite, pos] : drawables) {
-      if (sprite->texture) {
+      if (IsTextureValid(*(sprite->texture))) {
         render.DrawSprite(*sprite, *pos);
       } else {
         // placeholder: draw a rectangle
