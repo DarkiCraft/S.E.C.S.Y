@@ -6,6 +6,14 @@
 #include "raylib.h"
 #include "Sprite.hpp"
 
+struct Position {
+  float x, y;
+};
+
+struct Velocity {
+  float dx, dy;
+};
+
 namespace SECSY {
 enum class ScalingMode {
   LETTERBOX,      // Maintain aspect ratio, letterbox if necessary
@@ -63,10 +71,26 @@ class Render {
     ClearBackground(RAYWHITE);
   }
 
+  void EndRendering() {
+    EndTextureMode();
+    DrawTexturePro(renderTexture.texture,
+                   {0,
+                    0,
+                    (float)renderTexture.texture.width,
+                    -(float)renderTexture.texture.height},
+                   {renderOffset.x,
+                    renderOffset.y,
+                    width * renderScale,
+                    height * renderScale},
+                   {0, 0},
+                   0.0f,
+                   WHITE);
+  }
+
   // Textures + Sprites
-  void DrawSprite(const Sprite& sprite) {
-    Rectangle destRect = {sprite.position.x + renderOffset.x,
-                          sprite.position.y + renderOffset.y,
+  void DrawSprite(const Sprite& sprite, Position& position) {
+    Rectangle destRect = {position.x + renderOffset.x,
+                          position.y + renderOffset.y,
                           sprite.sourceRect.width * renderScale,
                           sprite.sourceRect.height * renderScale};
 
