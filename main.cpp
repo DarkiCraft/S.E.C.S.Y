@@ -1,47 +1,28 @@
+#include "SECSY/Platform/Window.hpp"
+#include "SECSY/Render/Renderer.hpp"
+
 #include <iostream>
-#include <raylib.h>
-
-#include "SECSY/SECSY.hpp"
-
-struct Position {
-  float x, y;
-};
-
-struct Velocity {
-  float dx, dy;
-};
-
-struct Name {
-  std::string value;
-  ~Name() {
-    std::cout << "Destroying Name: " << value << "\n";
-  }
-};
 
 int main() {
-  SECSY::Registry reg;
+  Image image = GenImageColor(16, 16, RED);  // 16x16 red square
 
-  SECSY::Entity e1 = reg.CreateEntity();
-  SECSY::Entity e2 = reg.CreateEntity();
+  SECSY::Window window(640, 360);
+  SECSY::Renderer renderer(320, 180);
 
-  reg.AddComponent(e1, Position{10.0f, 20.0f});
-  reg.AddComponent(e1, Velocity{1.0f, 1.5f});
+  Texture2D texture =
+      LoadTextureFromImage(image);  // textures must be initialized AFTER window
 
-  reg.AddComponent(e2, Position{5.0f, 2.0f});
-  reg.AddComponent(e2, Name{"SECSY"});
+  UnloadImage(image);
 
-  reg.Each<Position>([&](SECSY::Entity e, Position& pos) {
-    if (auto vel = reg.GetComponent<Velocity>(e)) {
-      pos.x += vel->dx;
-      pos.y += vel->dy;
-    }
-    std::cout << "Entity " << e.id << " Position: " << pos.x << ", " << pos.y
-              << "\n";
-  });
+  // this will be part of out internal game loop LATER LATER LATER (very later)
+  while (!window.ShouldClose()) {
+    renderer.Begin();
 
-  reg.Each<Name>([](SECSY::Entity e, Name& n) {
-    std::cout << "Entity[" << e.id << "]: " << n.value << "\n";
-  });
+    // this will be internalized in RenderSystem AFTER ECS is fixed
+    renderer.Submit({texture, {100, 100}, 0, {1, 1}, WHITE, 1});
 
-  reg.DestroyEntity(e2);
+    renderer.End();
+  }
+
+  UnloadTexture(texture);
 }
