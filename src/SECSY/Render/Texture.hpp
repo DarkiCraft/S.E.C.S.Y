@@ -19,8 +19,11 @@ class TextureManager {
     }
 
     Texture2D texture = ::LoadTexture(filePath.c_str());
-    auto texturePtr =
-        std::shared_ptr<Texture2D>(new Texture2D(texture), [](Texture2D* t) {
+    if (texture.id == 0) {
+      throw std::runtime_error("Failed to load texture: " + filePath);
+    }
+    auto texturePtr = std::shared_ptr<Texture2D>(
+        new Texture2D(std::move(texture)), [](Texture2D* t) {
           ::UnloadTexture(*t);
           delete t;
         });

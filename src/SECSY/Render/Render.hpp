@@ -28,7 +28,9 @@ class Render {
         title(std::move(title)),
         scalingMode(ScalingMode::LETTERBOX),
         renderScale(1.0f),
-        renderOffset{0.0f, 0.0f} {
+        renderOffset{0.0f, 0.0f},
+        currentWindowHeight(height),
+        currentWindowWidth(width) {
     InitWindow(this->width, this->height, this->title.c_str());
     SetWindowState(FLAG_WINDOW_RESIZABLE);
 
@@ -48,6 +50,7 @@ class Render {
     if (!IsWindowFullscreen()) {
       this->width  = width;
       this->height = height;
+      ::SetWindowSize(width, height);
       UpdateScaling();
     }
   }
@@ -127,10 +130,10 @@ class Render {
   }
 
  private:
-  std::int32_t width;
-  std::int32_t currentWindowWidth;
-  std::int32_t currentWindowHeight;
-  std::int32_t height;
+  unsigned int width;
+  unsigned int currentWindowWidth;
+  unsigned int currentWindowHeight;
+  unsigned int height;
   std::string title;
 
   ScalingMode scalingMode;
