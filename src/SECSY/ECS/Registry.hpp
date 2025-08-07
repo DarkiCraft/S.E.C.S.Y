@@ -1,69 +1,42 @@
 #pragma once
 
-#include <unordered_map>
-#include <typeindex>
-#include <type_traits>
-#include <any>
+#include <string_view>
 
 #include "Entity.hpp"
-#include "View.hpp"
 
 namespace SECSY {
 
 class Registry {
  public:
-  template <typename T_, typename... Args_>
-  T_& Emplace(Entity e_, Args_&&... args_) {
-    auto& componentMap = m_components[typeid(T_)];
-    T_ instance(std::forward<Args_>(args_)...);
-    componentMap[e_] = std::move(instance);
-    return std::any_cast<T_&>(componentMap[e_]);
-  }
+  // === Entity Management ===
+  Entity CreateEntity();
+  void DestroyEntity(Entity e);
+  bool IsAlive(Entity e) const;
 
-  template <typename T_>
-  bool Has(Entity e_) const {
-    auto it = m_components.find(typeid(T_));
-    if (it == m_components.end()) return false;
-    return it->second.find(e_) != it->second.end();
-  }
-
-  template <typename T_>
-  T_* Get(Entity e_) {
-    auto it = m_components.find(typeid(T_));
-    if (it == m_components.end()) return nullptr;
-    auto& cmap = it->second;
-    auto cit   = cmap.find(e_);
-    if (cit == cmap.end()) return nullptr;
-    return &std::any_cast<T_&>(cit->second);
-  }
-
-  template <typename T_>
-  void Remove(Entity e_) {
-    auto it = m_components.find(typeid(T_));
-    if (it != m_components.end()) {
-      it->second.erase(e_);
-    }
-  }
-
-  void Destroy(Entity e_) {
-    for (auto& [_, cmap] : m_components) {
-      cmap.erase(e_);
-    }
-  }
+  // === Component Management ===
+  template <typename T, typename... Args>
+  T& AddComponent(Entity e, Args&&... args);
 
   template <typename T>
-  View<T> View() const {
-    auto it = m_components.find(typeid(T));
-    if (it != m_components.end()) {
-      return SECSY::View<T>(&it->second);
-    }
+  T& GetComponent(Entity e);
 
-    return SECSY::View<T>(nullptr);
-  }
+  template <typename T>
+  bool HasComponent(Entity e) const;
 
- private:
-  std::unordered_map<std::type_index, std::unordered_map<Entity, std::any>>
-      m_components;
+  template <typename T>
+  void RemoveComponent(Entity e);
+
+  // === Views / Queries ===
+  template <typename... Components>
+  auto View();  // Returns iterable view of entities with given components
+
+  template <typename... Include, typename... Exclude>
+  auto Query();  // More advanced query with excludes
+
+  // === Tagging / Grouping (optional but sexy) ===
+  void Tag(Entity e, std::string_view tag);
+  bool HasTag(Entity e, std::string_view tag);
+  std::vector<Entity> GetTagged(std::string_view tag);
 };
 
 }  // namespace SECSY

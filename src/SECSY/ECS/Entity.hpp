@@ -14,7 +14,7 @@ struct Entity {
   Entity(std::uint32_t id_, std::uint8_t ver_) : id(id_), ver(ver_) {}
 
   bool IsValid() const {
-    return id != 0 || ver != 0;
+    return id != 0 && ver != 0;
   }
 
   bool operator==(const Entity& other_) const {
@@ -32,9 +32,9 @@ namespace std {
 
 template <>
 struct hash<SECSY::Entity> {
-  std::uint64_t operator()(const SECSY::Entity& e) const {
+  std::size_t operator()(const SECSY::Entity& e) const {
     // using Boost Hash Combine Algorithm
-    std::uint64_t h = std::hash<std::uint32_t>()(e.id);
+    std::size_t h = std::hash<std::uint32_t>()(e.id);
     h ^= std::hash<std::uint8_t>()(e.ver) + 0x9e3779b9 + (h << 6) + (h >> 2);
     return h;
   }

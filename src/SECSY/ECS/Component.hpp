@@ -1,3 +1,7 @@
 #pragma once
 
-namespace SECSY {}  // namespace SECSY
+namespace SECSY {
+
+// maybe provide a base for all Components?
+
+}  // namespace SECSY
