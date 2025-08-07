@@ -23,4 +23,6 @@ int main() {
 
     renderer.End();
   }
+
+  UnloadTexture(texture);
 }

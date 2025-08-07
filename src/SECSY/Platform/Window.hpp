@@ -3,12 +3,16 @@
 #include <cstdint>
 #include <utility>
 
-#include <raylib-cpp.hpp>
+#include <raylib.h>
 
 namespace SECSY {
 
 class Window {
  public:
+  // prevent copying
+  Window(const Window&)            = delete;
+  Window& operator=(const Window&) = delete;
+
   Window(std::uint32_t width, std::uint32_t height) {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     // int m = GetCurrentMonitor();

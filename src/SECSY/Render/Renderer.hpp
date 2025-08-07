@@ -2,11 +2,11 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <vector>
+#include <deque>
 
 #include <raylib.h>
 
-// temporary, we'll fix this when the ECS is cooking
+// this is temporary, we'll fix this when the ECS is cooked
 struct SpriteDrawCommand {
   Texture2D texture;
   Vector2 position;
@@ -20,6 +20,10 @@ namespace SECSY {
 
 class Renderer {
  public:
+  // prevent copying
+  Renderer(const Renderer&)            = delete;
+  Renderer& operator=(const Renderer&) = delete;
+
   Renderer(std::uint32_t internal_width, std::uint32_t internal_height) {
     m_internal_width  = internal_width;
     m_internal_height = internal_height;
@@ -52,8 +56,9 @@ class Renderer {
 
     EndTextureMode();
 
+    m_draw_queue.clear();
+
     // Now render the final texture scaled to the actual screen
-    BeginDrawing();
     ClearBackground(BLACK);  // Or whatever outer color
 
     float windowWidth  = GetScreenWidth();
@@ -76,8 +81,6 @@ class Renderer {
         {0, 0},
         0.0f,
         WHITE);
-
-    EndDrawing();
   }
 
   void Submit(const SpriteDrawCommand& cmd) {
@@ -86,7 +89,7 @@ class Renderer {
 
  private:
   RenderTexture2D m_target;
-  std::vector<SpriteDrawCommand> m_draw_queue;
+  std::deque<SpriteDrawCommand> m_draw_queue;
 
   std::uint32_t m_internal_width;
   std::uint32_t m_internal_height;
