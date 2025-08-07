@@ -9,22 +9,22 @@ namespace SECSY {
 class Registry {
  public:
   // === Entity Management ===
-  Entity CreateEntity();
-  void DestroyEntity(Entity e);
-  bool IsAlive(Entity e) const;
+  Entity Create();               // create entity
+  void Destroy(Entity e);        // destroy entity
+  bool IsAlive(Entity e) const;  // is entity alive
 
   // === Component Management ===
   template <typename T, typename... Args>
-  T& AddComponent(Entity e, Args&&... args);
+  T& Emplace(Entity e, Args&&... args);  // give entity a component
 
   template <typename T>
-  T& GetComponent(Entity e);
+  T& Get(Entity e);  // get reference to component from entity
 
   template <typename T>
-  bool HasComponent(Entity e) const;
+  bool Has(Entity e) const;  // does an entity have a component
 
   template <typename T>
-  void RemoveComponent(Entity e);
+  void Remove(Entity e);  // remove component from entity
 
   // === Views / Queries ===
   template <typename... Components>
@@ -32,11 +32,6 @@ class Registry {
 
   template <typename... Include, typename... Exclude>
   auto Query();  // More advanced query with excludes
-
-  // === Tagging / Grouping (optional but sexy) ===
-  void Tag(Entity e, std::string_view tag);
-  bool HasTag(Entity e, std::string_view tag);
-  std::vector<Entity> GetTagged(std::string_view tag);
 };
 
 }  // namespace SECSY
