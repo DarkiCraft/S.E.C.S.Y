@@ -2,15 +2,18 @@
 
 #include <cstdint>
 #include <functional>
+#include <utility>
 
 namespace SECSY {
 
 struct Entity {
-  std::uint32_t id;
-  std::uint8_t ver;
+  std::uint32_t id{};
+  std::uint8_t ver{};
   // we need to pad 3 bytes here, maybe group id and ver into 32 bits
 
-  Entity() = default;
+  Entity()                         = default;
+  Entity(const Entity&)            = default;
+  Entity& operator=(const Entity&) = default;
   Entity(std::uint32_t id_, std::uint8_t ver_) : id(id_), ver(ver_) {}
 
   bool IsValid() const {
@@ -32,11 +35,19 @@ namespace std {
 
 template <>
 struct hash<SECSY::Entity> {
-  std::size_t operator()(const SECSY::Entity& e) const {
+  std::size_t operator()(const SECSY::Entity& e) const noexcept {
     // using Boost Hash Combine Algorithm
     std::size_t h = std::hash<std::uint32_t>()(e.id);
     h ^= std::hash<std::uint8_t>()(e.ver) + 0x9e3779b9 + (h << 6) + (h >> 2);
     return h;
+  }
+};
+
+template <>
+struct less<SECSY::Entity> {
+  bool operator()(const SECSY::Entity& l_,
+                  const SECSY::Entity& r_) const noexcept {
+    return std::tie(l_.id, l_.ver) < std::tie(r_.id, r_.ver);
   }
 };
 
