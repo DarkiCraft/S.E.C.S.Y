@@ -1,8 +1,7 @@
 #pragma once
 
 #include <cstdint>
-#include <functional>
-#include <utility>
+#include <tuple>
 
 namespace SECSY {
 
@@ -11,20 +10,21 @@ struct Entity {
   std::uint8_t ver{};
   // we need to pad 3 bytes here, maybe group id and ver into 32 bits
 
-  constexpr Entity()                         = default;
-  constexpr Entity(const Entity&)            = default;
-  constexpr Entity& operator=(const Entity&) = default;
-  constexpr Entity(std::uint32_t id_, std::uint8_t ver_) : id(id_), ver(ver_) {}
+  constexpr Entity() noexcept                         = default;
+  constexpr Entity(const Entity&) noexcept            = default;
+  constexpr Entity& operator=(const Entity&) noexcept = default;
+  constexpr Entity(std::uint32_t id_, std::uint8_t ver_) noexcept
+      : id(id_), ver(ver_) {}
 
-  constexpr bool IsValid() const {
+  constexpr bool IsValid() const noexcept {
     return id != 0 && ver != 0;
   }
 
-  constexpr bool operator==(const Entity& other_) const {
+  constexpr bool operator==(const Entity& other_) const noexcept {
     return id == other_.id && ver == other_.ver;
   }
 
-  constexpr bool operator!=(const Entity& other_) const {
+  constexpr bool operator!=(const Entity& other_) const noexcept {
     return !(*this == other_);
   }
 
