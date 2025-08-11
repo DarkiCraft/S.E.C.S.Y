@@ -4,6 +4,8 @@
 #include <flat_map>
 #include <memory>
 #include <queue>
+#include <stdexcept>
+#include <type_traits>
 #include <unordered_set>
 
 #include "Entity.hpp"
@@ -38,9 +40,16 @@ class ComponentStorage : public IComponentStorage {
   T_& Emplace(SECSY::Entity e_, Args_&&... args_) {
     auto [it, inserted] = m_data.try_emplace(e_, std::forward<Args_>(args_)...);
     if (!inserted) {
-      // Overwrite using placement new to avoid temporary
-      it->second.~T_();
-      ::new (&it->second) T_(std::forward<Args_>(args_)...);
+      if constexpr (std::is_nothrow_constructible_v<T_, Args_...> ||
+                    !std::is_nothrow_move_constructible_v<T_>) {
+        std::destroy_at(std::addressof(it->second));
+        std::construct_at(std::addressof(it->second),
+                          std::forward<Args_>(args_)...);
+      } else {
+        T_ tmp(std::forward<Args_>(args_)...);  // may throw; strong guarantee
+        std::destroy_at(std::addressof(it->second));
+        std::construct_at(std::addressof(it->second), std::move(tmp));
+      }
     }
     return it->second;
   }
@@ -124,21 +133,25 @@ class Registry {
 
   template <typename T_, typename... Args_>
   T_& Emplace(Entity e_, Args_&&... args_) {
+    if (!IsAlive(e_)) {
+      throw std::out_of_range("Emplace() on non-alive entity");
+    }
+
     auto* storage = EnsureStorage<T_>();
     auto& comp    = storage->Emplace(e_, std::forward<Args_>(args_)...);
 
-    auto comp_id   = Internal::TypeID<T_>();
-    auto& comp_ids = m_entity_to_component_ids[e_];
-    if (std::find(comp_ids.begin(), comp_ids.end(), comp_id) ==
-        comp_ids.end()) {
-      comp_ids.push_back(comp_id);
-    }
+    auto comp_id = Internal::TypeID<T_>();
+    m_entity_to_component_ids[e_].insert(comp_id);
 
     return comp;
   }
 
   template <typename T_>
   T_& Get(Entity e) {
+    if (!IsAlive(e)) {
+      throw std::out_of_range("entity is not alive");
+    }
+
     auto* storage = FindStorage<T_>();
     if (!storage) {
       throw std::out_of_range("component storage missing");
@@ -148,6 +161,10 @@ class Registry {
 
   template <typename T_>
   const T_& Get(Entity e) const {
+    if (!IsAlive(e)) {
+      throw std::out_of_range("entity is not alive");
+    }
+
     auto* storage = FindStorage<T_>();
     if (!storage) {
       throw std::out_of_range("component storage missing");
@@ -157,6 +174,10 @@ class Registry {
 
   template <typename T_>
   bool Has(Entity e_) const noexcept {
+    if (!IsAlive(e_)) {
+      return false;
+    }
+
     auto id = Internal::TypeID<T_>();
     auto it = m_storages.find(id);
 
@@ -170,6 +191,10 @@ class Registry {
 
   template <typename T_>
   void Remove(Entity e_) noexcept {
+    if (!IsAlive(e_)) {
+      return;
+    }
+
     if (auto* storage = FindStorage<T_>()) {
       storage->Remove(e_);
     }
@@ -178,8 +203,8 @@ class Registry {
     auto it      = m_entity_to_component_ids.find(e_);
     if (it != m_entity_to_component_ids.end()) {
       auto& comp_ids = it->second;
-      comp_ids.erase(std::remove(comp_ids.begin(), comp_ids.end(), comp_id),
-                     comp_ids.end());
+      comp_ids.erase(comp_id);
+
       if (comp_ids.empty()) {
         m_entity_to_component_ids.erase(it);
       }
@@ -193,7 +218,7 @@ class Registry {
   std::unordered_map<Internal::ComponentID,
                      std::unique_ptr<Internal::IComponentStorage>>
       m_storages;
-  std::unordered_map<Entity, std::vector<Internal::ComponentID>>
+  std::unordered_map<Entity, std::unordered_set<Internal::ComponentID>>
       m_entity_to_component_ids;
 
   template <typename T_>

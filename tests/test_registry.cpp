@@ -113,6 +113,32 @@ TEST_F(RegistryFixture, EmplaceGetHasRemoveBasic) {
   EXPECT_THROW(reg.Get<Position>(e), std::out_of_range);
 }
 
+TEST_F(RegistryFixture, EmplaceOnDeadEntityThrows) {
+  // Test emplacing on a destroyed entity
+  auto e = reg.Create();
+  reg.Destroy(e);
+
+  EXPECT_THROW({ reg.Emplace<Position>(e, 1.0f, 2.0f); }, std::out_of_range);
+
+  // Verify the same for a different component type
+  EXPECT_THROW({ reg.Emplace<Velocity>(e, 3.0f, 4.0f); }, std::out_of_range);
+}
+
+TEST_F(RegistryFixture, EmplaceOnInvalidEntityThrows) {
+  // Test emplacing on Entity::Null
+  EXPECT_THROW(
+      { reg.Emplace<Position>(SECSY::Entity::Null, 1.0f, 2.0f); },
+      std::out_of_range);
+
+  // Test emplacing on a manually created invalid entity
+  SECSY::Entity invalid_entity{999999,
+                               1};  // Assuming this ID was never created
+
+  EXPECT_THROW(
+      { reg.Emplace<Position>(invalid_entity, 5.0f, 6.0f); },
+      std::out_of_range);
+}
+
 TEST_F(RegistryFixture, GetThrowsWhenNoStorage) {
   auto e = reg.Create();
   // We never emplaced a Velocity; Get should throw because there is no storage
