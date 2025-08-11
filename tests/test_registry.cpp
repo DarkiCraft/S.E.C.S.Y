@@ -275,3 +275,90 @@ TEST_F(RegistryFixture, ReusedEntityHasNoStaleComponents) {
   EXPECT_TRUE(reg.Has<Position>(e2));
   EXPECT_EQ(reg.Get<Position>(e2).x, 30);
 }
+
+TEST_F(RegistryFixture, ViewSingleComponent) {
+  auto e1 = reg.Create();
+  auto e2 = reg.Create();
+  reg.Emplace<Position>(e1, 1, 2);
+  reg.Emplace<Position>(e2, 3, 4);
+
+  std::unordered_set<SECSY::Entity> seen;
+  for (auto &[entity, pos] : reg.View<Position>()) {
+    seen.insert(entity);
+    EXPECT_TRUE(reg.Has<Position>(entity));
+  }
+
+  EXPECT_EQ(seen.size(), 2u);
+  EXPECT_TRUE(seen.count(e1));
+  EXPECT_TRUE(seen.count(e2));
+}
+
+TEST_F(RegistryFixture, ViewMultipleComponents) {
+  auto e1 = reg.Create();
+  auto e2 = reg.Create();
+  auto e3 = reg.Create();
+  reg.Emplace<Position>(e1, 1, 2);
+  reg.Emplace<Velocity>(e1, 0.1f, 0.2f);
+
+  reg.Emplace<Position>(e2, 3, 4);
+  // e2 intentionally has no Velocity
+
+  reg.Emplace<Position>(e3, 5, 6);
+  reg.Emplace<Velocity>(e3, -1.0f, -2.0f);
+
+  std::unordered_set<SECSY::Entity> seen;
+  for (auto &[entity, pos, vel] : reg.View<Position, Velocity>()) {
+    seen.insert(entity);
+    EXPECT_TRUE(reg.Has<Position>(entity));
+    EXPECT_TRUE(reg.Has<Velocity>(entity));
+  }
+
+  EXPECT_EQ(seen.size(), 2u);
+  EXPECT_TRUE(seen.count(e1));
+  EXPECT_TRUE(seen.count(e3));
+}
+
+TEST_F(RegistryFixture, ViewReturnsReferences) {
+  auto e = reg.Create();
+  reg.Emplace<Position>(e, 10, 20);
+  reg.Emplace<Velocity>(e, 1.0f, 1.5f);
+
+  for (auto &[entity, pos, vel] : reg.View<Position, Velocity>()) {
+    pos.x += 5;
+    vel.dy -= 0.5f;
+  }
+
+  EXPECT_EQ(reg.Get<Position>(e).x, 15);
+  EXPECT_FLOAT_EQ(reg.Get<Velocity>(e).dy, 1.0f);
+}
+
+TEST_F(RegistryFixture, ViewWithNoMatchingEntitiesIsEmpty) {
+  auto e1 = reg.Create();
+  auto e2 = reg.Create();
+  reg.Emplace<Position>(e1, 1, 2);
+  reg.Emplace<Position>(e2, 3, 4);
+
+  // No entity has both Position and Velocity
+  bool iterated = false;
+  for (auto &[entity, pos, vel] : reg.View<Position, Velocity>()) {
+    (void)entity;
+    (void)pos;
+    (void)vel;
+    iterated = true;
+  }
+  EXPECT_FALSE(iterated);
+}
+
+TEST_F(RegistryFixture, ViewSupportsMoveOnlyComponents) {
+  auto e = reg.Create();
+  reg.Emplace<Position>(e, 1, 2);
+  reg.Emplace<MoveOnly>(e, 123);
+
+  size_t count = 0;
+  for (auto &[entity, pos, mo] : reg.View<Position, MoveOnly>()) {
+    EXPECT_EQ(pos.x, 1);
+    EXPECT_EQ(mo.v, 123);
+    ++count;
+  }
+  EXPECT_EQ(count, 1u);
+}

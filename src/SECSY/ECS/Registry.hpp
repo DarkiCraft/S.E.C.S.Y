@@ -5,6 +5,7 @@
 #include <memory>
 #include <queue>
 #include <stdexcept>
+#include <tuple>
 #include <type_traits>
 #include <unordered_set>
 
@@ -211,6 +212,21 @@ class Registry {
     }
   }
 
+  // // === Views / Queries ===
+  template <typename... Components>
+  auto View() {
+    using ViewTuple = std::tuple<Entity, Components&...>;
+    std::vector<ViewTuple> result;
+
+    for (auto entity : m_entities) {
+      if ((Has<Components>(entity) && ...)) {
+        result.emplace_back(entity, Get<Components>(entity)...);
+      }
+    }
+
+    return result;
+  }
+
  private:
   std::unordered_set<Entity> m_entities;
   std::queue<Entity> m_free_entities;
@@ -256,10 +272,6 @@ class Registry {
     auto [new_it, inserted] = m_storages.emplace(id, std::move(uptr));
     return static_cast<Internal::ComponentStorage<T_>*>(new_it->second.get());
   }
-
-  // // === Views / Queries ===
-  // template <typename... Components>
-  // auto View();  // Returns iterable view of entities with given components
 
   // template <typename... Include, typename... Exclude>
   // auto Query();  // More advanced query with excludes
