@@ -171,21 +171,27 @@ TEST_F(RegistryFixture, ComponentStorageIsolationBetweenTypes) {
   EXPECT_FALSE(reg.Has<Velocity>(e1));
 }
 
-TEST_F(RegistryFixture, DestroyDoesNotImplicitlyRemoveComponents) {
+TEST_F(RegistryFixture, DestroyRemovesComponents) {
   auto e = reg.Create();
   reg.Emplace<Position>(e, 9, 9);
   reg.Destroy(e);
 
-  // Current implementation leaves components in storage (design choice).
-  // This test codifies that current behavior: Get/Has still succeed.
-  // If you instead want components to be removed on Destroy, change test to
-  // EXPECT_FALSE / EXPECT_THROW.
-  EXPECT_TRUE(reg.Has<Position>(e))
-      << "components were removed on destroy; was that intended?";
-  EXPECT_NO_THROW({
-    auto &p = reg.Get<Position>(e);
-    (void)p;
-  });
+  EXPECT_FALSE(reg.Has<Position>(e))
+      << "components were not removed on destroy";
+  EXPECT_THROW(reg.Get<Position>(e), std::out_of_range);
+}
+
+TEST_F(RegistryFixture, DestroyRemovesAllComponents) {
+  auto e = reg.Create();
+  reg.Emplace<Position>(e, 1, 2);
+  reg.Emplace<Velocity>(e, 3.4f, 5.6f);
+  reg.Emplace<Tag>(e, "test");
+
+  reg.Destroy(e);
+
+  EXPECT_FALSE(reg.Has<Position>(e));
+  EXPECT_FALSE(reg.Has<Velocity>(e));
+  EXPECT_FALSE(reg.Has<Tag>(e));
 }
 
 TEST_F(RegistryFixture, TypeIdUniqueness) {
@@ -215,4 +221,32 @@ TEST_F(RegistryFixture, RemovingMissingComponentIsNoop) {
   auto e = reg.Create();
   // Should not throw or crash
   EXPECT_NO_THROW(reg.Remove<Position>(e));
+}
+
+TEST_F(RegistryFixture, DestroyTwiceOrInvalidDoesNotCrash) {
+  auto e = reg.Create();
+  reg.Destroy(e);
+
+  // Destroying again or destroying a default invalid entity is safe no-op
+  EXPECT_NO_THROW(reg.Destroy(e));
+  SECSY::Entity invalid{};
+  EXPECT_NO_THROW(reg.Destroy(invalid));
+}
+
+TEST_F(RegistryFixture, ReusedEntityHasNoStaleComponents) {
+  auto e1 = reg.Create();
+  reg.Emplace<Position>(e1, 10, 20);
+  reg.Destroy(e1);
+
+  auto e2 = reg.Create();  // Should reuse e1.id but bump version
+  EXPECT_NE(e1.ver, e2.ver);
+  EXPECT_EQ(e1.id, e2.id);
+
+  EXPECT_FALSE(reg.Has<Position>(e2));
+  EXPECT_THROW(reg.Get<Position>(e2), std::out_of_range);
+
+  // Adding new component works as expected
+  reg.Emplace<Position>(e2, 30, 40);
+  EXPECT_TRUE(reg.Has<Position>(e2));
+  EXPECT_EQ(reg.Get<Position>(e2).x, 30);
 }

@@ -21,8 +21,9 @@ ComponentID TypeId() noexcept {
 
 // Base class for all storages
 struct IComponentStorage {
-  virtual ~IComponentStorage()                = default;
-  virtual ComponentID TypeId() const noexcept = 0;
+  virtual ~IComponentStorage()                   = default;
+  virtual ComponentID TypeId() const noexcept    = 0;
+  virtual void Remove(SECSY::Entity e_) noexcept = 0;
 };
 
 template <typename T_>
@@ -95,9 +96,22 @@ class Registry {
   }
 
   void Destroy(Entity e_) {
+    // Remove all components of entity
+    auto it = m_entity_to_component_ids.find(e_);
+    if (it != m_entity_to_component_ids.end()) {
+      for (auto comp_id : it->second) {
+        auto storage_it = m_storages.find(comp_id);
+        if (storage_it != m_storages.end()) {
+          storage_it->second->Remove(e_);
+        }
+      }
+      m_entity_to_component_ids.erase(it);
+    }
+
+    // Remove entity from live entities
     auto removed = m_entities.erase(e_);
     if (removed) {
-      m_free_entities.push(e_);  // mark deleted entity for reuse
+      m_free_entities.push(e_);
     }
   }
 
@@ -109,7 +123,16 @@ class Registry {
   template <typename T_, typename... Args_>
   T_& Emplace(Entity e_, Args_&&... args_) {
     auto* storage = EnsureStorage<T_>();
-    return storage->Emplace(e_, std::forward<Args_>(args_)...);
+    auto& comp    = storage->Emplace(e_, std::forward<Args_>(args_)...);
+
+    auto comp_id   = Internal::TypeId<T_>();
+    auto& comp_ids = m_entity_to_component_ids[e_];
+    if (std::find(comp_ids.begin(), comp_ids.end(), comp_id) ==
+        comp_ids.end()) {
+      comp_ids.push_back(comp_id);
+    }
+
+    return comp;
   }
 
   template <typename T_>
@@ -149,6 +172,17 @@ class Registry {
     if (auto* storage = FindStorage<T_>()) {
       storage->Remove(e_);
     }
+
+    auto comp_id = Internal::TypeId<T_>();
+    auto it      = m_entity_to_component_ids.find(e_);
+    if (it != m_entity_to_component_ids.end()) {
+      auto& comp_ids = it->second;
+      comp_ids.erase(std::remove(comp_ids.begin(), comp_ids.end(), comp_id),
+                     comp_ids.end());
+      if (comp_ids.empty()) {
+        m_entity_to_component_ids.erase(it);
+      }
+    }
   }
 
  private:
@@ -158,6 +192,8 @@ class Registry {
   std::unordered_map<Internal::ComponentID,
                      std::unique_ptr<Internal::IComponentStorage>>
       m_storages;
+  std::unordered_map<Entity, std::vector<Internal::ComponentID>>
+      m_entity_to_component_ids;
 
   template <typename T_>
   Internal::ComponentStorage<T_>* FindStorage() noexcept {
