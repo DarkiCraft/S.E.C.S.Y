@@ -1,7 +1,6 @@
-#include <cstdint>
-#include <set>
+#include <stdexcept>
 #include <string>
-#include <type_traits>
+#include <unordered_set>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -194,11 +193,11 @@ TEST_F(RegistryFixture, DestroyRemovesAllComponents) {
   EXPECT_FALSE(reg.Has<Tag>(e));
 }
 
-TEST_F(RegistryFixture, TypeIdUniqueness) {
-  // TypeId<T> must be unique per-type.
-  auto idPos = Internal::TypeId<Position>();
-  auto idVel = Internal::TypeId<Velocity>();
-  auto idTag = Internal::TypeId<Tag>();
+TEST_F(RegistryFixture, TypeIDUniqueness) {
+  // TypeID<T> must be unique per-type.
+  auto idPos = Internal::TypeID<Position>();
+  auto idVel = Internal::TypeID<Velocity>();
+  auto idTag = Internal::TypeID<Tag>();
 
   EXPECT_NE(idPos, idVel);
   EXPECT_NE(idPos, idTag);

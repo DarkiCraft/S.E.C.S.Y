@@ -10,11 +10,12 @@
 
 namespace Internal {
 
-using ComponentID = std::uintptr_t;  // safe to hold pointer-to-static addresses
+using ComponentID =
+    std::uintptr_t;  // holds address of static variable as unique ID
 
-// TypeId implementation
+// TypeID implementation
 template <typename T_>
-ComponentID TypeId() noexcept {
+ComponentID TypeID() noexcept {
   static int dummy;  // every T_ will get a unique dummy static var
   return reinterpret_cast<ComponentID>(&dummy);  // address ensures unique id
 }
@@ -22,23 +23,24 @@ ComponentID TypeId() noexcept {
 // Base class for all storages
 struct IComponentStorage {
   virtual ~IComponentStorage()                   = default;
-  virtual ComponentID TypeId() const noexcept    = 0;
+  virtual ComponentID TypeID() const noexcept    = 0;
   virtual void Remove(SECSY::Entity e_) noexcept = 0;
 };
 
 template <typename T_>
 class ComponentStorage : public IComponentStorage {
  public:
-  ComponentID TypeId() const noexcept override {
-    return Internal::TypeId<T_>();
+  ComponentID TypeID() const noexcept override {
+    return Internal::TypeID<T_>();
   }
 
   template <typename... Args_>
   T_& Emplace(SECSY::Entity e_, Args_&&... args_) {
     auto [it, inserted] = m_data.try_emplace(e_, std::forward<Args_>(args_)...);
     if (!inserted) {
-      // Overwrite if already exists
-      it->second = T_(std::forward<Args_>(args_)...);
+      // Overwrite using placement new to avoid temporary
+      it->second.~T_();
+      ::new (&it->second) T_(std::forward<Args_>(args_)...);
     }
     return it->second;
   }
@@ -87,7 +89,7 @@ class Registry {
       Entity e = m_free_entities.front();
       m_free_entities.pop();
       id  = e.id;
-      ver = (e.ver + 1) ? e.ver + 1 : 1;  // prevent 0 value due to overflow
+      ver = (e.ver == 255) ? 1 : e.ver + 1;  // wrap to 1 on overflow, skip 0
     }
 
     Entity e{id, ver};
@@ -125,7 +127,7 @@ class Registry {
     auto* storage = EnsureStorage<T_>();
     auto& comp    = storage->Emplace(e_, std::forward<Args_>(args_)...);
 
-    auto comp_id   = Internal::TypeId<T_>();
+    auto comp_id   = Internal::TypeID<T_>();
     auto& comp_ids = m_entity_to_component_ids[e_];
     if (std::find(comp_ids.begin(), comp_ids.end(), comp_id) ==
         comp_ids.end()) {
@@ -155,16 +157,15 @@ class Registry {
 
   template <typename T_>
   bool Has(Entity e_) const noexcept {
-    auto id = Internal::TypeId<T_>();
+    auto id = Internal::TypeID<T_>();
     auto it = m_storages.find(id);
 
     if (it == m_storages.end()) {
       return false;  // cannot have T_ component if no Storage exists
     }
 
-    return it->second->TypeId() == id &&  // this is a sanity check :)
-           static_cast<const Internal::ComponentStorage<T_>*>(it->second.get())
-               ->Has(e_);
+    return static_cast<const Internal::ComponentStorage<T_>*>(it->second.get())
+        ->Has(e_);
   }
 
   template <typename T_>
@@ -173,7 +174,7 @@ class Registry {
       storage->Remove(e_);
     }
 
-    auto comp_id = Internal::TypeId<T_>();
+    auto comp_id = Internal::TypeID<T_>();
     auto it      = m_entity_to_component_ids.find(e_);
     if (it != m_entity_to_component_ids.end()) {
       auto& comp_ids = it->second;
@@ -197,9 +198,9 @@ class Registry {
 
   template <typename T_>
   Internal::ComponentStorage<T_>* FindStorage() noexcept {
-    auto id = Internal::TypeId<T_>();
+    auto id = Internal::TypeID<T_>();
     auto it = m_storages.find(id);
-    if (it == m_storages.end() || it->second->TypeId() != id) {
+    if (it == m_storages.end()) {
       return nullptr;
     }
     return static_cast<Internal::ComponentStorage<T_>*>(it->second.get());
@@ -207,9 +208,9 @@ class Registry {
 
   template <typename T_>
   const Internal::ComponentStorage<T_>* FindStorage() const noexcept {
-    auto id = Internal::TypeId<T_>();
+    auto id = Internal::TypeID<T_>();
     auto it = m_storages.find(id);
-    if (it == m_storages.end() || it->second->TypeId() != id) {
+    if (it == m_storages.end()) {
       return nullptr;
     }
     return static_cast<const Internal::ComponentStorage<T_>*>(it->second.get());
@@ -218,13 +219,10 @@ class Registry {
   // helper: find or create storage for T_
   template <typename T_>
   Internal::ComponentStorage<T_>* EnsureStorage() {
-    auto id = Internal::TypeId<T_>();
+    auto id = Internal::TypeID<T_>();
     auto it = m_storages.find(id);
 
     if (it != m_storages.end()) {
-      if (it->second->TypeId() != id) {
-        throw std::logic_error("storage TypeId mismatch");
-      }
       return static_cast<Internal::ComponentStorage<T_>*>(it->second.get());
     }
 
