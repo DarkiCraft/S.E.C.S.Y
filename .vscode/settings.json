@@ -68,6 +68,9 @@
     "unordered_set": "cpp",
     "set": "cpp",
     "any": "cpp",
+    "bitset": "cpp",
+    "codecvt": "cpp",
+    "complex": "cpp",
     "condition_variable": "cpp",
     "csignal": "cpp",
     "cstring": "cpp",
@@ -78,4 +81,14 @@
   },
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "C_Cpp.default.cppStandard": "c++23"
+    "set": "cpp",
+    "unordered_set": "cpp",
+    "expected": "cpp",
+    "fstream": "cpp",
+    "mutex": "cpp",
+    "print": "cpp",
+    "queue": "cpp",
+    "stdfloat": "cpp",
+    "valarray": "cpp"
+  }
 }
