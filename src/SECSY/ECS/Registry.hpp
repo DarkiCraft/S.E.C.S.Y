@@ -8,8 +8,10 @@
 #include <tuple>
 #include <type_traits>
 #include <unordered_set>
+#include <utility>
 
 #include "Entity.hpp"
+#include "../Core/SparseSet.hpp"
 
 namespace Internal {
 
@@ -99,7 +101,7 @@ class Registry {
     }
 
     Entity e{id, ver};
-    m_entities.insert(e);
+    m_entities.Add(e);
     return e;
   }
 
@@ -117,15 +119,12 @@ class Registry {
     }
 
     // Remove entity from live entities
-    auto removed = m_entities.erase(e_);
-    if (removed) {
-      m_free_entities.push(e_);
-    }
+    m_entities.Remove(e_);
+    m_free_entities.push(e_);
   }
 
   bool IsAlive(Entity e_) const {
-    auto it = m_entities.find(e_);
-    return it != m_entities.end();
+    return m_entities.Contains(e_);
   }
 
   template <typename T_, typename... Args_>
@@ -144,7 +143,7 @@ class Registry {
   }
 
   template <typename T_>
-  T_& Get(Entity e) {
+  const T_& Get(Entity e) const {
     if (!IsAlive(e)) {
       throw std::out_of_range("entity is not alive");
     }
@@ -157,16 +156,8 @@ class Registry {
   }
 
   template <typename T_>
-  const T_& Get(Entity e) const {
-    if (!IsAlive(e)) {
-      throw std::out_of_range("entity is not alive");
-    }
-
-    auto* storage = FindStorage<T_>();
-    if (!storage) {
-      throw std::out_of_range("component storage missing");
-    }
-    return storage->Get(e);
+  T_& Get(SECSY::Entity e_) {
+    return const_cast<T_&>(std::as_const(*this).template Get<T_>(e_));
   }
 
   template <typename T_>
@@ -239,7 +230,7 @@ class Registry {
   }
 
  private:
-  using entity_storage = std::unordered_set<Entity>;
+  using entity_storage = SparseSet<Entity>;
   using entity_free_list =
       std::priority_queue<Entity, std::vector<Entity>, std::greater<Entity>>;
   using component_storage =

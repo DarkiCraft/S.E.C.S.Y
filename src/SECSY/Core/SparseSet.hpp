@@ -4,50 +4,68 @@
 #include <limits>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
-template <typename T_>
+namespace SECSY {
+
+template <typename T_, typename Size_ = std::size_t>
 class SparseSet {
  public:
-  static constexpr size_t npos = std::numeric_limits<size_t>::max();
+  using size_type       = Size_;
+  using value_type      = T_;
+  using reference       = T_&;
+  using const_reference = const T_&;
+  using pointer         = T_*;
+  using const_pointer   = const T_*;
 
-  SparseSet(size_t capacity_ = 0) {
+  static constexpr size_type npos = std::numeric_limits<size_type>::max();
+
+  SparseSet(size_type capacity_ = 0) {
     m_sparse.resize(capacity_, npos);
   }
 
-  void Add(T_ e_) {
-    if (Contains(e_)) return;
+  void Add(value_type e_) {
+    if (Contains(e_)) {
+      return;
+    }
+
     EnsureCapacity(e_);
-    m_sparse[static_cast<size_t>(e_)] = m_dense.size();
+    m_sparse[static_cast<size_type>(e_)] = m_dense.size();
     m_dense.push_back(e_);
   }
 
-  void Remove(T_ e_) {
+  void Remove(value_type e_) {
     if (!Contains(e_)) {
       throw std::runtime_error("Element not found in SparseSet");
     }
-    size_t index                        = m_sparse[static_cast<size_t>(e_)];
-    T_ last                             = m_dense.back();
-    m_dense[index]                      = last;
-    m_sparse[static_cast<size_t>(last)] = index;
+
+    size_type index = m_sparse[static_cast<size_type>(e_)];
+    value_type last = m_dense.back();
+    m_dense[index]  = last;
+    m_sparse[static_cast<size_type>(last)] = index;
     m_dense.pop_back();
-    m_sparse[static_cast<size_t>(e_)] = npos;
+    m_sparse[static_cast<size_type>(e_)] = npos;
   }
 
-  bool Contains(T_ e_) const {
-    return static_cast<size_t>(e_) < m_sparse.size() &&
-           m_sparse[static_cast<size_t>(e_)] != npos;
+  bool Contains(value_type e_) const {
+    return static_cast<size_type>(e_) < m_sparse.size() &&
+           m_sparse[static_cast<size_type>(e_)] != npos;
   }
 
-  size_t Size() const {
+  size_type Size() const {
     return m_dense.size();
   }
 
-  const T_& operator[](size_t index) const {
-    if (index >= m_dense.size()) {
+  const_reference operator[](size_type index_) const {
+    if (index_ >= m_dense.size()) {
       throw std::out_of_range("Index out of range");
     }
-    return m_dense[index];
+    return m_dense[index_];
+  }
+
+  reference operator[](size_type index_) {
+    return const_cast<reference>(std::as_const(*this).operator[](index_));
   }
 
   auto begin() noexcept {
@@ -70,12 +88,17 @@ class SparseSet {
   }
 
  private:
-  void EnsureCapacity(T_ e_) {
-    if (static_cast<size_t>(e_) >= m_sparse.size()) {
-      m_sparse.resize(static_cast<size_t>(e_) + 1, npos);
+  using dense_storage  = std::vector<value_type>;
+  using sparse_storage = std::vector<size_type>;
+
+  void EnsureCapacity(value_type e_) {
+    if (static_cast<size_type>(e_) >= m_sparse.size()) {
+      m_sparse.resize(static_cast<size_type>(e_) * 1.5, npos);
     }
   }
 
-  std::vector<T_> m_dense;
-  std::vector<size_t> m_sparse;
+  dense_storage m_dense;
+  sparse_storage m_sparse;
 };
+
+}  // namespace SECSY
