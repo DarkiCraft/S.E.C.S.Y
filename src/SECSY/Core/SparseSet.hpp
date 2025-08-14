@@ -1,61 +1,67 @@
 #pragma once
 
-#include <cstddef>
-#include <limits>
-#include <stdexcept>
-#include <type_traits>
 #include <vector>
+#include <unordered_map>
+#include <stdexcept>
 
-template <typename T_>
+template <typename T>
 class SparseSet {
  public:
-  static constexpr size_t npos = std::numeric_limits<size_t>::max();
+  SparseSet() = default;
 
-  SparseSet(size_t capacity_ = 0) {
-    m_sparse.resize(capacity_, npos);
+  void add(const T& value) {
+    if (contains(value)) return;
+    sparse[value] = dense.size();
+    dense.push_back(value);
   }
 
-  void Add(T_ e_) {
-    if (Contains(e_)) return;
-    EnsureCapacity(e_);
-    m_sparse[e_] = m_dense.size();
-    m_dense.push_back(e_);
-  }
-
-  void Remove(T_ e_) {
-    if (!Contains(e_)) {
+  void remove(const T& value) {
+    if (!contains(value)) {
       throw std::runtime_error("Element not found in SparseSet");
     }
-    size_t index = m_sparse[e_];
-    T_ last       = m_dense.back();
-    m_dense[index] = last;
-    m_sparse[last] = index;
-    m_dense.pop_back();
-    m_sparse[e_] = npos;
+    size_t index = sparse[value];
+    T last       = dense.back();
+    dense[index] = last;
+    sparse[last] = index;
+    dense.pop_back();
+    sparse.erase(value);
   }
 
-  bool Contains(T_ e_) const {
-    return e_ < m_sparse.size() && m_sparse[e_] != npos;
+  bool contains(const T& value) const {
+    return sparse.find(value) != sparse.end();
   }
 
-  size_t Size() const {
-    return m_dense.size();
+  size_t size() const noexcept {
+    return dense.size();
   }
 
-  const T_& operator[](size_t index) const {
-    if (index >= m_dense.size()) {
+  const T& operator[](size_t index) const {
+    if (index >= dense.size()) {
       throw std::out_of_range("Index out of range");
     }
-    return m_dense[index];
+    return dense[index];
+  }
+
+  auto begin() noexcept {
+    return dense.begin();
+  }
+  auto end() noexcept {
+    return dense.end();
+  }
+  auto begin() const noexcept {
+    return dense.begin();
+  }
+  auto end() const noexcept {
+    return dense.end();
+  }
+  auto cbegin() const noexcept {
+    return dense.cbegin();
+  }
+  auto cend() const noexcept {
+    return dense.cend();
   }
 
  private:
-  void EnsureCapacity(T_ e_) {
-    if (e_ >= m_sparse.size()) {
-      m_sparse.resize(e_ + 1, npos);
-    }
-  }
-
-  std::vector<T_> m_dense;
-  std::vector<size_t> m_sparse;
+  std::vector<T> dense;
+  std::unordered_map<T, size_t> sparse;
 };
