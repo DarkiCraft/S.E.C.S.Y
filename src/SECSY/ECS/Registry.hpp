@@ -34,7 +34,7 @@ template <typename T_>
 class ComponentStorage : public IComponentStorage {
  public:
   ComponentID TypeID() const noexcept override {
-    return Internal::TypeID<T_>();
+    return ::Internal::TypeID<T_>();
   }
 
   template <typename... Args_>
@@ -55,7 +55,7 @@ class ComponentStorage : public IComponentStorage {
     return it->second;
   }
 
-  T_& Get(SECSY::Entity e_) {
+  const T_& Get(SECSY::Entity e_) const {
     auto it = m_data.find(e_);
     if (it == m_data.end()) {
       throw std::out_of_range("component not found for entity");
@@ -63,12 +63,8 @@ class ComponentStorage : public IComponentStorage {
     return it->second;
   }
 
-  const T_& Get(SECSY::Entity e_) const {
-    auto it = m_data.find(e_);
-    if (it == m_data.end()) {
-      throw std::out_of_range("component not found for entity");
-    }
-    return it->second;
+  T_& Get(SECSY::Entity e_) {
+    return const_cast<T_&>(std::as_const(*this).Get<T_>());
   }
 
   bool Has(SECSY::Entity e_) const noexcept {
@@ -141,7 +137,7 @@ class Registry {
     auto* storage = EnsureStorage<T_>();
     auto& comp    = storage->Emplace(e_, std::forward<Args_>(args_)...);
 
-    auto comp_id = Internal::TypeID<T_>();
+    auto comp_id = ::Internal::TypeID<T_>();
     m_entity_to_component_ids[e_].insert(comp_id);
 
     return comp;
@@ -179,14 +175,15 @@ class Registry {
       return false;
     }
 
-    auto id = Internal::TypeID<T_>();
+    auto id = ::Internal::TypeID<T_>();
     auto it = m_storages.find(id);
 
     if (it == m_storages.end()) {
       return false;  // cannot have T_ component if no Storage exists
     }
 
-    return static_cast<const Internal::ComponentStorage<T_>*>(it->second.get())
+    return static_cast<const ::Internal::ComponentStorage<T_>*>(
+               it->second.get())
         ->Has(e_);
   }
 
@@ -200,7 +197,7 @@ class Registry {
       storage->Remove(e_);
     }
 
-    auto comp_id = Internal::TypeID<T_>();
+    auto comp_id = ::Internal::TypeID<T_>();
     auto it      = m_entity_to_component_ids.find(e_);
     if (it != m_entity_to_component_ids.end()) {
       auto& comp_ids = it->second;
@@ -212,69 +209,83 @@ class Registry {
     }
   }
 
-  // // === Views / Queries ===
   template <typename... Components>
   auto View() {
     using ViewTuple = std::tuple<Entity, Components&...>;
     std::vector<ViewTuple> result;
 
-    for (auto entity : m_entities) {
-      if ((Has<Components>(entity) && ...)) {
-        result.emplace_back(entity, Get<Components>(entity)...);
-      }
+    auto storages = std::make_tuple(FindStorage<Components>()...);
+
+    if (std::apply(
+            [](auto const*... ptrs) { return (... || (ptrs == nullptr)); },
+            storages)) {
+      return result;
+    }
+
+    for (Entity e : m_entities) {
+      bool matches = std::apply(
+          [&](auto const*... ptrs) { return (... && ptrs->Has(e)); }, storages);
+
+      if (!matches) continue;
+
+      result.push_back(std::apply(
+          [&](auto*... ptrs) -> ViewTuple {
+            return ViewTuple(e, ptrs->Get(e)...);
+          },
+          storages));
     }
 
     return result;
   }
 
  private:
-  std::unordered_set<Entity> m_entities;
-  std::queue<Entity> m_free_entities;
-  std::uint32_t m_next_id{1};
-  std::unordered_map<Internal::ComponentID,
-                     std::unique_ptr<Internal::IComponentStorage>>
-      m_storages;
-  std::unordered_map<Entity, std::unordered_set<Internal::ComponentID>>
+  using entity_storage   = std::unordered_set<Entity>;
+  using entity_free_list = std::queue<Entity>;
+  using component_storage =
+      std::unordered_map<::Internal::ComponentID,
+                         std::unique_ptr<::Internal::IComponentStorage>>;
+
+  entity_storage m_entities;
+  entity_free_list m_free_entities;
+  component_storage m_storages;
+
+  Entity::id_type m_next_id{1};
+
+  std::unordered_map<Entity, std::unordered_set<::Internal::ComponentID>>
       m_entity_to_component_ids;
 
   template <typename T_>
-  Internal::ComponentStorage<T_>* FindStorage() noexcept {
-    auto id = Internal::TypeID<T_>();
+  const ::Internal::ComponentStorage<T_>* FindStorage() const noexcept {
+    auto id = ::Internal::TypeID<T_>();
     auto it = m_storages.find(id);
     if (it == m_storages.end()) {
       return nullptr;
     }
-    return static_cast<Internal::ComponentStorage<T_>*>(it->second.get());
+    return static_cast<const ::Internal::ComponentStorage<T_>*>(
+        it->second.get());
   }
 
   template <typename T_>
-  const Internal::ComponentStorage<T_>* FindStorage() const noexcept {
-    auto id = Internal::TypeID<T_>();
-    auto it = m_storages.find(id);
-    if (it == m_storages.end()) {
-      return nullptr;
-    }
-    return static_cast<const Internal::ComponentStorage<T_>*>(it->second.get());
+  ::Internal::ComponentStorage<T_>* FindStorage() noexcept {
+    return const_cast<::Internal::ComponentStorage<T_>*>(
+        std::as_const(*this).template FindStorage<T_>());
   }
 
   // helper: find or create storage for T_
   template <typename T_>
-  Internal::ComponentStorage<T_>* EnsureStorage() {
-    auto id = Internal::TypeID<T_>();
+  ::Internal::ComponentStorage<T_>* EnsureStorage() {
+    auto id = ::Internal::TypeID<T_>();
     auto it = m_storages.find(id);
 
     if (it != m_storages.end()) {
-      return static_cast<Internal::ComponentStorage<T_>*>(it->second.get());
+      return static_cast<::Internal::ComponentStorage<T_>*>(it->second.get());
     }
 
     // create and insert
-    auto uptr = std::make_unique<Internal::ComponentStorage<T_>>();
+    auto uptr = std::make_unique<::Internal::ComponentStorage<T_>>();
     auto [new_it, inserted] = m_storages.emplace(id, std::move(uptr));
-    return static_cast<Internal::ComponentStorage<T_>*>(new_it->second.get());
+    return static_cast<::Internal::ComponentStorage<T_>*>(new_it->second.get());
   }
-
-  // template <typename... Include, typename... Exclude>
-  // auto Query();  // More advanced query with excludes
 };
 
 }  // namespace SECSY

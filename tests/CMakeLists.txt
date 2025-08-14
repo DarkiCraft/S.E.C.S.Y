@@ -1,8 +1,8 @@
 enable_testing()
 
 add_executable(SECSY_tests
-    test_entity.cpp
-    test_registry.cpp
+    test_ecs_entity.cpp
+    test_ecs_registry.cpp
 )
 
 target_link_libraries(SECSY_tests PRIVATE
