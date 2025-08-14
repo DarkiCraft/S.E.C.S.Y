@@ -64,7 +64,7 @@ class ComponentStorage : public IComponentStorage {
   }
 
   T_& Get(SECSY::Entity e_) {
-    return const_cast<T_&>(std::as_const(*this).Get<T_>());
+    return const_cast<T_&>(std::as_const(*this).Get(e_));
   }
 
   bool Has(SECSY::Entity e_) const noexcept {
@@ -92,7 +92,7 @@ class Registry {
       id  = m_next_id++;
       ver = 1;
     } else {
-      Entity e = m_free_entities.front();
+      Entity e = m_free_entities.top();
       m_free_entities.pop();
       id  = e.id;
       ver = (e.ver == 255) ? 1 : e.ver + 1;  // wrap to 1 on overflow, skip 0
@@ -239,8 +239,9 @@ class Registry {
   }
 
  private:
-  using entity_storage   = std::unordered_set<Entity>;
-  using entity_free_list = std::queue<Entity>;
+  using entity_storage = std::unordered_set<Entity>;
+  using entity_free_list =
+      std::priority_queue<Entity, std::vector<Entity>, std::greater<Entity>>;
   using component_storage =
       std::unordered_map<::Internal::ComponentID,
                          std::unique_ptr<::Internal::IComponentStorage>>;
