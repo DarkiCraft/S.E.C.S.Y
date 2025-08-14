@@ -38,6 +38,10 @@ struct Entity {
     return std::tie(id, ver) > std::tie(other_.id, other_.ver);
   }
 
+  constexpr operator size_t() const noexcept {
+    return static_cast<size_t>(id);
+  }
+
   static const Entity Null;
 };
 
