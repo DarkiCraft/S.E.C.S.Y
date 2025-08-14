@@ -37,7 +37,7 @@ class SparseSet {
 
   void Remove(value_type e_) {
     if (!Contains(e_)) {
-      throw std::runtime_error("Element not found in SparseSet");
+      return;
     }
 
     size_type index = m_sparse[static_cast<size_type>(e_)];
@@ -93,7 +93,7 @@ class SparseSet {
 
   void EnsureCapacity(value_type e_) {
     if (static_cast<size_type>(e_) >= m_sparse.size()) {
-      m_sparse.resize(static_cast<size_type>(e_) * 1.5, npos);
+      m_sparse.resize(static_cast<size_type>(e_) + 1, npos);
     }
   }
 
