@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <tuple>
+#include <functional>
 
 namespace SECSY {
 
