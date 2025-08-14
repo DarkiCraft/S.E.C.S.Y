@@ -57,6 +57,14 @@ class SparseSet {
     return m_dense.size();
   }
 
+  const_pointer Data() const {
+    return m_dense.data();
+  }
+
+  pointer Data() {
+    return const_cast<pointer>(std::as_const(*this).Data());
+  }
+
   const_reference operator[](size_type index_) const {
     if (index_ >= m_dense.size()) {
       throw std::out_of_range("Index out of range");

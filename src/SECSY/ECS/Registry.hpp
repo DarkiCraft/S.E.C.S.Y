@@ -81,6 +81,84 @@ class ComponentStorage : public IComponentStorage {
   std::flat_map<SECSY::Entity, T_> m_data;
 };
 
+template <typename... Components_>
+class ViewIterator {
+ public:
+  using view_tuple = std::tuple<::SECSY::Entity, Components_&...>;
+
+  ViewIterator(::SECSY::Entity* current_,
+               ::SECSY::Entity* end_,
+               std::tuple<ComponentStorage<Components_>*...> storages_)
+      : m_current(current_), m_end(end_), m_storages(storages_) {
+    SkipNonMatching();
+  }
+
+  view_tuple operator*() const {
+    return std::apply(
+        [&](auto*... ptrs) {
+          return view_tuple(*m_current, ptrs->Get(*m_current)...);
+        },
+        m_storages);
+  }
+
+  ViewIterator& operator++() {
+    ++m_current;
+    SkipNonMatching();
+    return *this;
+  }
+
+  bool operator==(const ViewIterator& other) const {
+    return m_current == other.m_current;
+  }
+  bool operator!=(const ViewIterator& other) const {
+    return !(*this == other);
+  }
+
+ private:
+  void SkipNonMatching() {
+    while (m_current != m_end && !Matches()) {
+      ++m_current;
+    }
+  }
+
+  bool Matches() const {
+    return std::apply(
+        [&](auto*... ptrs) { return (... && ptrs->Has(*m_current)); },
+        m_storages);
+  }
+
+  ::SECSY::Entity* m_current;
+  ::SECSY::Entity* m_end;
+  std::tuple<ComponentStorage<Components_>*...> m_storages;
+};
+
+template <typename... Components_>
+class View {
+ public:
+  using iterator       = ViewIterator<Components_...>;
+  using const_iterator = const ViewIterator<Components_...>;
+  using view_tuple     = std::tuple<::SECSY::Entity, Components_&...>;
+
+  View(::SECSY::SparseSet<::SECSY::Entity>& entities_,
+       std::tuple<ComponentStorage<Components_>*...> storages_)
+      : m_entities(entities_), m_storages(storages_) {}
+
+  iterator begin() {
+    return iterator(
+        m_entities.Data(), m_entities.Data() + m_entities.Size(), m_storages);
+  }
+
+  iterator end() {
+    return iterator(m_entities.Data() + m_entities.Size(),
+                    m_entities.Data() + m_entities.Size(),
+                    m_storages);
+  }
+
+ private:
+  ::SECSY::SparseSet<::SECSY::Entity>& m_entities;
+  std::tuple<ComponentStorage<Components_>*...> m_storages;
+};
+
 }  // namespace Internal
 
 namespace SECSY {
@@ -170,7 +248,7 @@ class Registry {
     auto it = m_storages.find(id);
 
     if (it == m_storages.end()) {
-      return false;  // cannot have T_ component if no Storage exists
+      return false;  // cannot have T_ component if no ComponentStorage exists
     }
 
     return static_cast<const ::Internal::ComponentStorage<T_>*>(
@@ -202,31 +280,16 @@ class Registry {
 
   template <typename... Components>
   auto View() {
-    using ViewTuple = std::tuple<Entity, Components&...>;
-    std::vector<ViewTuple> result;
-
     auto storages = std::make_tuple(FindStorage<Components>()...);
 
-    if (std::apply(
-            [](auto const*... ptrs) { return (... || (ptrs == nullptr)); },
-            storages)) {
-      return result;
+    if (std::apply([](auto*... ptrs) { return (... || (ptrs == nullptr)); },
+                   storages)) {
+      // Return an empty range
+      static SparseSet<Entity> empty;
+      return ::Internal::View<Components...>(empty, storages);
     }
 
-    for (Entity e : m_entities) {
-      bool matches = std::apply(
-          [&](auto const*... ptrs) { return (... && ptrs->Has(e)); }, storages);
-
-      if (!matches) continue;
-
-      result.push_back(std::apply(
-          [&](auto*... ptrs) -> ViewTuple {
-            return ViewTuple(e, ptrs->Get(e)...);
-          },
-          storages));
-    }
-
-    return result;
+    return ::Internal::View<Components...>(m_entities, storages);
   }
 
  private:

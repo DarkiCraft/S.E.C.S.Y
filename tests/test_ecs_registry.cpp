@@ -283,7 +283,7 @@ TEST_F(RegistryFixture, ViewSingleComponent) {
   reg.Emplace<Position>(e2, 3, 4);
 
   std::unordered_set<SECSY::Entity> seen;
-  for (auto &[entity, pos] : reg.View<Position>()) {
+  for (auto&& [entity, pos] : reg.View<Position>()) {
     seen.insert(entity);
     EXPECT_TRUE(reg.Has<Position>(entity));
   }
@@ -307,7 +307,7 @@ TEST_F(RegistryFixture, ViewMultipleComponents) {
   reg.Emplace<Velocity>(e3, -1.0f, -2.0f);
 
   std::unordered_set<SECSY::Entity> seen;
-  for (auto &[entity, pos, vel] : reg.View<Position, Velocity>()) {
+  for (auto&& [entity, pos, vel] : reg.View<Position, Velocity>()) {
     seen.insert(entity);
     EXPECT_TRUE(reg.Has<Position>(entity));
     EXPECT_TRUE(reg.Has<Velocity>(entity));
@@ -323,7 +323,7 @@ TEST_F(RegistryFixture, ViewReturnsReferences) {
   reg.Emplace<Position>(e, 10, 20);
   reg.Emplace<Velocity>(e, 1.0f, 1.5f);
 
-  for (auto &[entity, pos, vel] : reg.View<Position, Velocity>()) {
+  for (auto&& [entity, pos, vel] : reg.View<Position, Velocity>()) {
     pos.x += 5;
     vel.dy -= 0.5f;
   }
@@ -340,7 +340,7 @@ TEST_F(RegistryFixture, ViewWithNoMatchingEntitiesIsEmpty) {
 
   // No entity has both Position and Velocity
   bool iterated = false;
-  for (auto &[entity, pos, vel] : reg.View<Position, Velocity>()) {
+  for (auto&& [entity, pos, vel] : reg.View<Position, Velocity>()) {
     (void)entity;
     (void)pos;
     (void)vel;
@@ -355,7 +355,7 @@ TEST_F(RegistryFixture, ViewSupportsMoveOnlyComponents) {
   reg.Emplace<MoveOnly>(e, 123);
 
   size_t count = 0;
-  for (auto &[entity, pos, mo] : reg.View<Position, MoveOnly>()) {
+  for (auto&& [entity, pos, mo] : reg.View<Position, MoveOnly>()) {
     EXPECT_EQ(pos.x, 1);
     EXPECT_EQ(mo.v, 123);
     ++count;
