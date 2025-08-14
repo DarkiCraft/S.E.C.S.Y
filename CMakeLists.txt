@@ -1,15 +1,15 @@
 cmake_minimum_required(VERSION 3.11)
+project(SECSY LANGUAGES CXX)
 
-project(SECSY)
-
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(BUILD_SHARED_LIBS OFF)
 
+include(CTest)
 include(FetchContent)
 
 set(FETCHCONTENT_QUIET OFF)
-set(BUILD_SHARED_LIBS OFF)
 set(OPTION_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
 set(OPTION_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(OPTION_BUILD_TOOLS OFF CACHE BOOL "" FORCE)
@@ -30,32 +30,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(raylib_cpp)
 
-add_executable(${PROJECT_NAME} main.cpp)
-
-target_include_directories(${PROJECT_NAME} PUBLIC src)
-
-target_link_libraries(${PROJECT_NAME} PRIVATE
-    raylib
-    raylib_cpp
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG        v1.17.0
+    GIT_SHALLOW    TRUE
 )
+set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
 
-if(APPLE)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        "-framework IOKit"
-        "-framework Cocoa"
-        "-framework OpenGL"
-    )
-elseif(UNIX)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        m
-        pthread
-        dl
-        rt
-        X11
-    )
-elseif(WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        winmm
-        gdi32
-    )
-endif()
+add_subdirectory(src)
+add_subdirectory(tests)

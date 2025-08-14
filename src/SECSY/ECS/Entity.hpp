@@ -1,30 +1,66 @@
 #pragma once
 
 #include <cstdint>
+#include <tuple>
 #include <functional>
 
 namespace SECSY {
 
 struct Entity {
-  std::uint32_t id;
-  std::uint32_t generation;
+  using id_type  = std::uint32_t;
+  using ver_type = std::uint8_t;
 
-  bool operator==(const Entity& other_) const {
-    return id == other_.id && generation == other_.generation;
+  id_type id{};
+  ver_type ver{};
+  // we need to pad 3 bytes here, maybe group id and ver into 32 bits
+
+  constexpr Entity() noexcept                         = default;
+  constexpr Entity(const Entity&) noexcept            = default;
+  constexpr Entity& operator=(const Entity&) noexcept = default;
+  constexpr Entity(id_type id_, ver_type ver_) noexcept : id(id_), ver(ver_) {}
+
+  constexpr bool IsValid() const noexcept {
+    return id != 0 && ver != 0;
   }
-  bool operator!=(const Entity& other_) const {
+
+  constexpr bool operator==(const Entity& other_) const noexcept {
+    return id == other_.id && ver == other_.ver;
+  }
+
+  constexpr bool operator!=(const Entity& other_) const noexcept {
     return !(*this == other_);
   }
+
+  constexpr bool operator<(const Entity& other_) const noexcept {
+    return std::tie(id, ver) < std::tie(other_.id, other_.ver);
+  }
+
+  constexpr bool operator>(const Entity& other_) const noexcept {
+    return std::tie(id, ver) > std::tie(other_.id, other_.ver);
+  }
+
+  constexpr operator size_t() const noexcept {
+    return static_cast<size_t>(id);
+  }
+
+  static const Entity Null;
 };
+
+constexpr Entity Entity::Null = Entity{0, 0};
 
 }  // namespace SECSY
 
 namespace std {
+
 template <>
 struct hash<SECSY::Entity> {
-  std::size_t operator()(const SECSY::Entity& e) const {
-    return (std::hash<uint32_t>()(e.id) << 1) ^
-           std::hash<uint32_t>()(e.generation);
+  std::size_t operator()(const SECSY::Entity& e) const noexcept {
+    // using Boost Hash Combine Algorithm
+    std::size_t h = std::hash<SECSY::Entity::id_type>()(e.id);
+    h ^= std::hash<SECSY::Entity::ver_type>()(e.ver) + 0x9e3779b9 + (h << 6) +
+         (h >> 2);
+    return h;
   }
 };
+
 }  // namespace std

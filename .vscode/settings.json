@@ -64,6 +64,9 @@
     "typeinfo": "cpp",
     "variant": "cpp",
     "typeindex": "cpp",
+    "flat_map": "cpp",
+    "unordered_set": "cpp",
+    "set": "cpp",
     "any": "cpp",
     "bitset": "cpp",
     "codecvt": "cpp",
@@ -73,6 +76,11 @@
     "cstring": "cpp",
     "forward_list": "cpp",
     "map": "cpp",
+    "fstream": "cpp",
+    "mutex": "cpp"
+  },
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "C_Cpp.default.cppStandard": "c++23"
     "set": "cpp",
     "unordered_set": "cpp",
     "expected": "cpp",
