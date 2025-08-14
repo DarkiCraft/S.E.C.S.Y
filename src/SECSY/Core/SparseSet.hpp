@@ -1,67 +1,81 @@
 #pragma once
 
-#include <vector>
-#include <unordered_map>
+#include <cstddef>
+#include <limits>
 #include <stdexcept>
+#include <type_traits>
+#include <vector>
 
-template <typename T>
+template <typename T_>
 class SparseSet {
  public:
-  SparseSet() = default;
+  static constexpr size_t npos = std::numeric_limits<size_t>::max();
 
-  void add(const T& value) {
-    if (contains(value)) return;
-    sparse[value] = dense.size();
-    dense.push_back(value);
+  SparseSet(size_t capacity_ = 0) {
+    m_sparse.resize(capacity_, npos);
   }
 
-  void remove(const T& value) {
-    if (!contains(value)) {
+  void Add(T_ e_) {
+    if (Contains(e_)) return;
+    EnsureCapacity(e_);
+    m_sparse[static_cast<size_t>(e_)] = m_dense.size();
+    m_dense.push_back(e_);
+  }
+
+  void Remove(T_ e_) {
+    if (!Contains(e_)) {
       throw std::runtime_error("Element not found in SparseSet");
     }
-    size_t index = sparse[value];
-    T last       = dense.back();
-    dense[index] = last;
-    sparse[last] = index;
-    dense.pop_back();
-    sparse.erase(value);
+    size_t index                        = m_sparse[static_cast<size_t>(e_)];
+    T_ last                             = m_dense.back();
+    m_dense[index]                      = last;
+    m_sparse[static_cast<size_t>(last)] = index;
+    m_dense.pop_back();
+    m_sparse[static_cast<size_t>(e_)] = npos;
   }
 
-  bool contains(const T& value) const {
-    return sparse.find(value) != sparse.end();
+  bool Contains(T_ e_) const {
+    return static_cast<size_t>(e_) < m_sparse.size() &&
+           m_sparse[static_cast<size_t>(e_)] != npos;
   }
 
-  size_t size() const noexcept {
-    return dense.size();
+  size_t Size() const {
+    return m_dense.size();
   }
 
-  const T& operator[](size_t index) const {
-    if (index >= dense.size()) {
+  const T_& operator[](size_t index) const {
+    if (index >= m_dense.size()) {
       throw std::out_of_range("Index out of range");
     }
-    return dense[index];
+    return m_dense[index];
   }
 
   auto begin() noexcept {
-    return dense.begin();
+    return m_dense.begin();
   }
   auto end() noexcept {
-    return dense.end();
+    return m_dense.end();
   }
   auto begin() const noexcept {
-    return dense.begin();
+    return m_dense.begin();
   }
   auto end() const noexcept {
-    return dense.end();
+    return m_dense.end();
   }
   auto cbegin() const noexcept {
-    return dense.cbegin();
+    return m_dense.cbegin();
   }
   auto cend() const noexcept {
-    return dense.cend();
+    return m_dense.cend();
   }
 
  private:
-  std::vector<T> dense;
-  std::unordered_map<T, size_t> sparse;
+  void EnsureCapacity(T_ e_) {
+    if (static_cast<size_t>(e_) >= m_sparse.size()) {
+      m_sparse.resize(static_cast<size_t>(e_) + 1, npos);
+    }
+  }
+
+  std::vector<T_> m_dense;
+  std::vector<size_t> m_sparse;
 };
